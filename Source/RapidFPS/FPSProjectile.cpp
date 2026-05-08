@@ -22,6 +22,8 @@ AFPSProjectile::AFPSProjectile()
         CollisionComponent->InitSphereRadius(15.0f);
         // Set the root component to be the collision component.
         RootComponent = CollisionComponent;
+        // Event called when component hits something.
+        CollisionComponent->OnComponentHit.AddDynamic(this, &AFPSProjectile::OnHit);
     }
 
     if (!ProjectileMovementComponent)
@@ -33,12 +35,15 @@ AFPSProjectile::AFPSProjectile()
         ProjectileMovementComponent->MaxSpeed = 3000.0f;
         ProjectileMovementComponent->bRotationFollowsVelocity = true;
         ProjectileMovementComponent->bShouldBounce = true;
-        ProjectileMovementComponent->Bounciness = 0.3f;
+        ProjectileMovementComponent->Bounciness = 6.0f;
         ProjectileMovementComponent->ProjectileGravityScale = 0.0f;
     }
 
+    // Set the sphere's collision profile name to "Projectile".
+    CollisionComponent->BodyInstance.SetCollisionProfileName(TEXT("Projectile"));
+
     // Delete the projectile after 3 seconds.
-    InitialLifeSpan = 3.0f;
+    InitialLifeSpan = 1.0f;
 
 }
 
@@ -47,6 +52,29 @@ void AFPSProjectile::BeginPlay()
 {
 	Super::BeginPlay();
 	
+}
+
+// Function that is called when the projectile hits something.
+void AFPSProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit)
+{
+    if (OtherActor != this && OtherComponent->IsSimulatingPhysics())
+    {
+        OtherComponent->AddImpulseAtLocation(ProjectileMovementComponent->Velocity * 100.0f, Hit.ImpactPoint);
+    }
+    //Destroy();
+
+    // Disable the Projectile Movement Component
+    if (ProjectileMovementComponent)
+    {
+        ProjectileMovementComponent->StopMovementImmediately();
+        ProjectileMovementComponent->SetActive(false);
+    }
+
+    if (CollisionComponent)
+    {
+        CollisionComponent->SetSimulatePhysics(true);
+        CollisionComponent->AddImpulse(ProjectileMovementComponent->Velocity);
+    }
 }
 
 // Called every frame
