@@ -43,7 +43,7 @@ AFPSProjectile::AFPSProjectile()
     CollisionComponent->BodyInstance.SetCollisionProfileName(TEXT("Projectile"));
 
     // Delete the projectile after 3 seconds.
-    InitialLifeSpan = 1.0f;
+    InitialLifeSpan = 2.0f;
 
 }
 

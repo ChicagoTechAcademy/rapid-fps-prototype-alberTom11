@@ -10,6 +10,8 @@ APlayerCharacter::APlayerCharacter()
 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
+    currentAmmo = maxAmmo;
+    storedAmmo = maxAmmo * 2;
 }
 
 // Called when the game starts or when spawned
@@ -45,6 +47,11 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 	}
 }
 
+void APlayerCharacter::DecreaseAmmo(int ammoSpent)
+{
+    currentAmmo -= ammoSpent;
+}
+
 void APlayerCharacter::Move(const FInputActionValue& Value)
 {
 	FVector2D MovementVector = Value.Get<FVector2d>();
@@ -57,6 +64,7 @@ void APlayerCharacter::Move(const FInputActionValue& Value)
 
 void APlayerCharacter::Jump(const FInputActionValue& Value)
 {
+    UE_Log(LogTemp, Warning, TEXT("Stored Ammo: %d", storedAmmo));
 }
 
 void APlayerCharacter::Look(const FInputActionValue& Value)
@@ -71,44 +79,56 @@ void APlayerCharacter::Look(const FInputActionValue& Value)
 
 void APlayerCharacter::Shoot(const FInputActionValue& Value)
 {
-    // Attempt to fire a projectile.
-    if (ProjectileClass)
+    if (currentAmmo > 0)
     {
-        // Get the camera transform.
-        FVector CameraLocation;
-        FRotator CameraRotation;
-        GetActorEyesViewPoint(CameraLocation, CameraRotation);
-
-        // Set MuzzleOffset to spawn projectiles slightly in front of the camera.
-        MuzzleOffset.Set(100.0f, 50.0f, -75.0f);
-
-        // Transform MuzzleOffset from camera space to world space.
-        FVector MuzzleLocation = CameraLocation + FTransform(CameraRotation).TransformVector(MuzzleOffset);
-
-        // Skew the aim to be slightly upwards.
-        FRotator MuzzleRotation = CameraRotation;
-        MuzzleRotation.Pitch += 10.0f;
-
-        UWorld* World = GetWorld();
-        if (World)
+        if (ProjectileClass)
         {
-            FActorSpawnParameters SpawnParams;
-            SpawnParams.Owner = this;
-            SpawnParams.Instigator = GetInstigator();
+            // Get the camera transform.
+            FVector CameraLocation;
+            FRotator CameraRotation;
+            GetActorEyesViewPoint(CameraLocation, CameraRotation);
 
-            // Spawn the projectile at the muzzle.
-            AFPSProjectile* Projectile = World->SpawnActor<AFPSProjectile>(ProjectileClass, MuzzleLocation, MuzzleRotation, SpawnParams);
-            if (Projectile)
+            // Set MuzzleOffset to spawn projectiles slightly in front of the camera.
+            MuzzleOffset.Set(100.0f, 50.0f, -75.0f);
+
+            // Transform MuzzleOffset from camera space to world space.
+            FVector MuzzleLocation = CameraLocation + FTransform(CameraRotation).TransformVector(MuzzleOffset);
+
+            // Skew the aim to be slightly upwards.
+            FRotator MuzzleRotation = CameraRotation;
+            MuzzleRotation.Pitch += 10.0f;
+
+            UWorld* World = GetWorld();
+            if (World)
             {
-                // Set the projectile's initial trajectory.
-                FVector LaunchDirection = MuzzleRotation.Vector();
-                Projectile->FireInDirection(LaunchDirection);
+                FActorSpawnParameters SpawnParams;
+                SpawnParams.Owner = this;
+                SpawnParams.Instigator = GetInstigator();
+
+                // Spawn the projectile at the muzzle.
+                AFPSProjectile* Projectile = World->SpawnActor<AFPSProjectile>(ProjectileClass, MuzzleLocation, MuzzleRotation, SpawnParams);
+                if (Projectile)
+                {
+                    // Set the projectile's initial trajectory.
+                    FVector LaunchDirection = MuzzleRotation.Vector();
+                    Projectile->FireInDirection(LaunchDirection);
+                    DecreaseAmmo(1);
+                }
             }
         }
     }
+    // Attempt to fire a projectile.
+    
 }
 
 void APlayerCharacter::Reload(const FInputActionValue& Value)
 {
+    while ((currentAmmo < maxAmmo) && storedAmmo > 0)
+    {
+        currentAmmo += 1;
+        storedAmmo -= 1;
+
+        UE_Log(LogTemp, Warning, TEXT("Stored Ammo: %d",storedAmmo));
+    }
 }
 
