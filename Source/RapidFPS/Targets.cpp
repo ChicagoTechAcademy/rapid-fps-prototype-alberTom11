@@ -17,6 +17,19 @@ ATargets::ATargets()
 	Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Static Mesh"));
 	Mesh->SetupAttachment(RootComponent);
 
+	Collision->OnComponentHit.AddDynamic(this, &ATargets::OnHit);
+
+}
+
+void ATargets::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
+{
+	if (OtherActor && (OtherActor != this) && OtherComp)
+	{
+		// Handle logic here, e.g., print the name of the hit actor
+		UE_LOG(LogTemp, Warning, TEXT("Hit: %s"), OtherActor->GetName());
+
+	}
+
 }
 
 // Called when the game starts or when spawned
